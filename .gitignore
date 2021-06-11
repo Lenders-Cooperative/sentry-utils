@@ -1,0 +1,5 @@
+dist/*
+build/*
+django_sentry_config.egg-info/*
+.idea/*
+*/__pycache__/*
