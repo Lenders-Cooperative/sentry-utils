@@ -12,15 +12,15 @@ def _get_var_from_env(env: Env, env_var_name: str, var_name: str):
     message_start = f'\nSentry configured incorrectly. "{var_name}" was not passed to sentry_init and '
     if not env:
         message = message_start + f'an env was not passed to search for {env_var_name}.'
-        raise ValueError(message)
+        raise EnvironmentError(message)
     try:
         return env(env_var_name)
     except environ.ImproperlyConfigured:
         message = message_start + f'{env_var_name} was not set in env.'
-        raise ValueError(message)
+        raise EnvironmentError(message)
     except:
         message = message_start + f'an unknown error occurred when attempting to read environment variable {env_var_name}.'
-        raise Exception(message)
+        raise RuntimeError(message)
 
 def sentry_init(env: Env = None,
                 dsn: str = None,
@@ -31,11 +31,11 @@ def sentry_init(env: Env = None,
                 send_default_pii: bool = True,
                 environment: str = None,
                 before_send = None):
-    dsn_env_var = "SENTRY_EXCEPTION_DSN"
+    dsn_env_var = "SENTRY_DSN"
     environment_env_var = "BASE_URL"
     dsn = dsn or _get_var_from_env(env, dsn_env_var, "dsn")
-    integrations = integrations or [DjangoIntegration(),CeleryIntegration(),RedisIntegration()]
     environment = environment or _get_var_from_env(env, environment_env_var, "environment")
+    integrations = integrations or [DjangoIntegration(),CeleryIntegration(),RedisIntegration()]
     sentry_sdk.init(
         dsn,
         transport=transport,
@@ -54,7 +54,7 @@ def protect_body(event, hint):
 
 def capture_exception(e):
     """
-        Wrapper for sentry_sdk.capture_exception.  Use this instead of that one
+        Wrapper for sentry_sdk.capture_exception
     """
     with sentry_sdk.configure_scope() as scope:
         scope.add_event_processor(protect_body)

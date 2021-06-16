@@ -2,26 +2,12 @@ from sentry_sdk.transport import HttpTransport
 from environ import Env
 import sentry_sdk
 
-class TrafficSplittingHttpTransport(HttpTransport):
-    def __init__(self, options, transactions_dsn: str = None, env: Env = None):
-        super(TrafficSplittingHttpTransport, self).__init__(options)
+def traffic_splitting_http_transport_init(env: Env):
+    transactions_dsn = env('SENTRY_TRANSACTIONS_DSN', default=None)
+    TrafficSplittingHttpTransport._transactions_client = sentry_sdk.Client(transactions_dsn)
 
-        perf_dsn_env_var = 'SENTRY_PERFORMANCE_DSN'
-        prod_dsn_env_var = 'SENTRY_DSN'
-        if not transactions_dsn:
-            if env:
-                if env(perf_dsn_env_var, default=None):
-                    transactions_dsn = env(perf_dsn_env_var)
-                elif env(prod_dsn_env_var, default=None):
-                    transactions_dsn = env(prod_dsn_env_var)
-                else:
-                    message = 'Error during TrafficSplittingHttpTransport __init__. Parameter "transactions_dsn" is undefined and ' \
-                              f'environment variables "{prod_dsn_env_var}" and "{prod_dsn_env_var}" are both undefined.'
-                    raise RuntimeError(message)
-            else:
-                message = 'Error during TrafficSplittingHttpTransport __init__. Parameters "transactions_dsn" and "env" are both undefined.'
-                raise RuntimeError(message)
-        self._transactions_client = sentry_sdk.Client(transactions_dsn)
+class TrafficSplittingHttpTransport(HttpTransport):
+    _transactions_client = None
 
     def capture_envelope(self, envelope):
         # Do not call super() here to effectively split all transactions into
@@ -32,6 +18,7 @@ class TrafficSplittingHttpTransport(HttpTransport):
         #
         # It also assumes that Release Health data (sessions) should end up in
         # TRANSACTIONS_DSN
+        self.confirm_client()
         event = envelope.get_event()
         if event and event.get("type") == "error":
             return HttpTransport.capture_envelope(self, envelope)
@@ -39,9 +26,16 @@ class TrafficSplittingHttpTransport(HttpTransport):
             return self._transactions_client.transport.capture_envelope(envelope)
 
     def flush(self, *args, **kwargs):
+        self.confirm_client()
         self._transactions_client.transport.flush(*args, **kwargs)
         HttpTransport.flush(self, *args, **kwargs)
 
     def kill(self, *args, **kwargs):
+        self.confirm_client()
         self._transactions_client.transport.kill(*args, **kwargs)
         HttpTransport.kill(self, *args, **kwargs)
+
+    def confirm_client(self):
+        if not self._transactions_client:
+            message = "The transaction splitting transport class was not initialized. Ensure the function 'traffic_splitting_http_transport_init' was executed."
+            raise EnvironmentError(message)
