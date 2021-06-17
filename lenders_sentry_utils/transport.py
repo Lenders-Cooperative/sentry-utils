@@ -1,10 +1,4 @@
 from sentry_sdk.transport import HttpTransport
-from environ import Env
-import sentry_sdk
-
-def traffic_splitting_http_transport_init(env: Env):
-    transactions_dsn = env('SENTRY_TRANSACTIONS_DSN', default=None)
-    TrafficSplittingHttpTransport._transactions_client = sentry_sdk.Client(transactions_dsn)
 
 class TrafficSplittingHttpTransport(HttpTransport):
     _transactions_client = None

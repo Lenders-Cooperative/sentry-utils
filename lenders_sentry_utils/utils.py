@@ -6,7 +6,11 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
+from .transport import TrafficSplittingHttpTransport
 
+def _traffic_splitting_http_transport_init(env: Env):
+    transactions_dsn = env('SENTRY_TRANSACTIONS_DSN', default=None)
+    TrafficSplittingHttpTransport._transactions_client = sentry_sdk.Client(transactions_dsn)
 
 def _get_var_from_env(env: Env, env_var_name: str, var_name: str):
     message_start = f'\nSentry configured incorrectly. "{var_name}" was not passed to sentry_init and '
@@ -39,6 +43,10 @@ def sentry_init(env: Env = None,
     environment = environment or _get_var_from_env(env, environment_env_var, "environment")
     release = release or env(release_env_var, default=None)
     integrations = integrations or [DjangoIntegration(),CeleryIntegration(),RedisIntegration()]
+
+    if transport is TrafficSplittingHttpTransport:
+        _traffic_splitting_http_transport_init(env)
+
     sentry_sdk.init(
         dsn,
         transport=transport,

@@ -61,27 +61,24 @@ This is usually done for billing purposes to ensure that all errors can be repor
 To use this transport, the environment variable `SENTRY_TRANSACTIONS_DSN` must be set with the second DSN as its value.
 If this environment variable is not set, transaction events will instead be discarded.
 
-Additionally, the function `traffic_splitting_http_transport_init` must be called before an instance of the class is created.
-This function is what properly initializes the second DSN to handle transport events.
-
 #### TrafficSplittingHttpTransport Examples
 ```python
 import lenders_sentry_utils as lsu
 from environ import Env
 
-base_env = Env(
+drop_transactions_env = Env(
     SENTRY_DSN = (str, 'https://error_dsn@sentry.io/0'),
     BASE_URL = (str, 'base.com'),
 )
 send_transactions_env = Env(
+    SENTRY_DSN = (str, 'https://error_dsn@sentry.io/0'),
+    BASE_URL = (str, 'base.com'),
     SENTRY_TRANSACTIONS_DSN = (str, 'https://transactions_dsn@sentry.io/0'),
 )
 
 # Example 1: Sending transaction events
-lsu.traffic_splitting_http_transport_init(send_transactions_env)
-lsu.sentry_init(env=base_env, transport=lsu.TrafficSplittingHttpTransport)
+lsu.sentry_init(env=send_transactions_env, transport=lsu.TrafficSplittingHttpTransport)
 
 # Example 2: Ignoring transaction events
-lsu.traffic_splitting_http_transport_init(Env())
-lsu.sentry_init(env=base_env, transport=lsu.TrafficSplittingHttpTransport)
+lsu.sentry_init(env=drop_transactions_env, transport=lsu.TrafficSplittingHttpTransport)
 ```
