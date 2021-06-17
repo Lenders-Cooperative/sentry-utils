@@ -30,11 +30,14 @@ def sentry_init(env: Env = None,
                 integrations: List = None,
                 send_default_pii: bool = True,
                 environment: str = None,
-                before_send = None):
+                before_send = None,
+                release: str = None):
     dsn_env_var = "SENTRY_DSN"
     environment_env_var = "BASE_URL"
+    release_env_var = "VERSION"
     dsn = dsn or _get_var_from_env(env, dsn_env_var, "dsn")
     environment = environment or _get_var_from_env(env, environment_env_var, "environment")
+    release = release or env(release_env_var, default=None)
     integrations = integrations or [DjangoIntegration(),CeleryIntegration(),RedisIntegration()]
     sentry_sdk.init(
         dsn,
@@ -45,6 +48,7 @@ def sentry_init(env: Env = None,
         send_default_pii=send_default_pii,
         environment=environment,
         before_send=before_send,
+        release=release,
     )
 
 def protect_body(event, hint):

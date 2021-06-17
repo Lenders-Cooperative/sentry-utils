@@ -18,9 +18,10 @@ Any parameter with no description directly corresponds to a `sentry_sdk.init` op
 
 | Parameter name | Type | Default value | Description |
 | --- | --- | --- | --- |
-| env | Env | None | An Env object to search if `dsn` or `environment` are not passed |
+| env | Env | None | An Env object to search if `dsn`, `environment`, or `release` are not passed |
 | dsn | str | env("SENTRY_DSN") |  |
 | environment | str | env("BASE_URL") |  |
+| release | str | env("VERSION") |  |
 | debug | bool | False |  |
 | send_default_pii | bool | True |  |
 | traces_sample_rate | float | 0.1 |  |
@@ -31,6 +32,7 @@ Any parameter with no description directly corresponds to a `sentry_sdk.init` op
 Note: `env`, `dsn`, and `environment` are dependent on each other to a certain degree.
 If `dsn` or `environment` are not passed as parameters, `env` must be passed in order to pull the corresponding environment variable.
 Additionally, if `dsn` or `environment` are passed, the passed value will be used even if the corresponding environment variable exists in `env`.
+`release` is similar to `dsn` and `environment`, but it is fully optional.
 
 #### Sentry Init Examples
 ```python
